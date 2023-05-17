@@ -34,11 +34,11 @@ from . import EXT_TO_TRANS
 )
 def main(in_file_name, out_file_name, model_name, service_url, device):
     ext = in_file_name.split(".")[-1].lower()
-    trans_class = EXT_TO_TRANS[ext]
-    if trans_class:
+    trans_class = EXT_TO_TRANS.get(ext, None)
+    if trans_class is not None:
         trans = trans_class(model_name=model_name, service_url=service_url, device=device)
         trans.translate(in_file_name, out_file_name)
     else:
-        raise RuntimeError(f"Unknown extension {ext} - please select one of {EXT_TO_TRANS.keys()}!")
+        raise RuntimeError(f"Unknown extension {ext} - please select one of {', '.join(EXT_TO_TRANS.keys())}!")
 
 main()
