@@ -1,0 +1,9 @@
+accelerate
+git+https://github.com/peter-sk/clean-text
+python-docx
+python-pptx
+sacremoses
+sentencepiece
+torch
+transformers
+unidecode
