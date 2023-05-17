@@ -1,5 +1,6 @@
 accelerate
 git+https://github.com/peter-sk/clean-text
+click
 python-docx
 python-pptx
 sacremoses

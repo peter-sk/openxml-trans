@@ -23,7 +23,7 @@ class Cache:
 
 class BaseTranslator:
 
-    def __init__(self, device=None, model_name=None, service_url=None, cache_name=None):
+    def __init__(self, model_name, service_url, cache_name, device):
         self.device = ("cuda:0" if cuda_is_available() else "cpu") if device is None else device
         if model_name is None and service_url is None:
             raise RuntimeError("Neither model name nor service URL provided!")
