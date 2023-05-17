@@ -34,17 +34,27 @@ class BaseTranslator:
     def translate_text(self, text):
         if cached_text := self.cache.get(text):
             return cached_text
-        if self.pipeline is not None:
-            new_sentences = []
-            sentences = clean(text, lang="da", lower=False).split(". ")
-            for i in range(len(sentences)):
-                sentence = sentences[i]
-                if i+1 < len(sentences):
-                    sentence += "."
+        new_sentences = []
+        sentences = clean(text, lang="da", lower=False).split(". ")
+        for i in range(len(sentences)):
+            sentence = sentences[i]
+            if i+1 < len(sentences):
+                sentence += "."
+            if self.pipeline is not None:
                 new_sentence = self.pipeline(sentence)[0]['translation_text'] if any((c.isalpha() for c in sentence)) else sentence
-                print("REPR",repr(sentence), repr(new_sentence))
-                new_sentences.append(new_sentence)
-            new_text = " ".join(new_sentences)
+            else:
+                from requests import post
+                new_sentence = post(
+                    'http://10.20.105.65:8100/translate',
+                    json = {
+                        "l1": "da",
+                        "l2": "en",
+                        "sentences": [sentence]
+                    }
+                ).json()["translations"][0]["l2"][0]
+            print("REPR",repr(sentence), repr(new_sentence))
+            new_sentences.append(new_sentence)
+        new_text = " ".join(new_sentences)
         self.cache.set(text, new_text)
         return new_text
 
