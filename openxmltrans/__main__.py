@@ -34,6 +34,11 @@ from . import EXT_TO_TRANS
 )
 def main(in_file_name, out_file_name, model_name, service_url, device):
     ext = in_file_name.split(".")[-1].lower()
+    if ext == "pdf":
+        from pdf2docx import parse
+        parse(in_file_name, in_file_name+".docx")
+        in_file_name += ".docx"
+        ext = "docx"
     trans_class = EXT_TO_TRANS.get(ext, None)
     if trans_class is not None:
         trans = trans_class(model_name=model_name, service_url=service_url, device=device)
