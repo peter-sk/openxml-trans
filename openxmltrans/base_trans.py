@@ -23,39 +23,45 @@ class Cache:
 
 class BaseTranslator:
 
-    def __init__(self, model_name, service_url, cache_name, device):
+    def __init__(self, model_name, service_url, cache_name, device, clean_text, original_language, result_language):
         self.device = ("cuda:0" if cuda_is_available() else "cpu") if device is None else device
         if model_name is None and service_url is None:
             raise RuntimeError("Neither model name nor service URL provided!")
-        self.pipeline = None if model_name is None else transformers_pipeline("translation", model_name, device=device)
+        self.l1, self.l2 = original_language, result_language
+        self.pipeline = None if model_name is None else transformers_pipeline("translation", f"{model_name}-{self.l1}-{self.l2}", device=device)
         self.service_url = service_url
         self.cache = Cache(cache_name)
+        self.clean_text = clean_text
 
     def translate_text(self, text):
-        if cached_text := self.cache.get(text):
+        if cached_text := self.cache.get((self.l1, self.l2, text)):
             return cached_text
         new_sentences = []
-        sentences = clean(text, lang="da", lower=False).split(". ")
+        if self.clean_text:
+            text = clean(text, lang="da", lower=False)
+        sentences = text.split(". ")
         for i in range(len(sentences)):
             sentence = sentences[i]
             if i+1 < len(sentences):
                 sentence += "."
-            if self.pipeline is not None:
+            if not sentence:
+                new_sentence = sentence
+            elif self.pipeline is not None:
                 new_sentence = self.pipeline(sentence)[0]['translation_text'] if any((c.isalpha() for c in sentence)) else sentence
             else:
                 from requests import post
                 new_sentence = post(
-                    'http://10.20.105.65:8100/translate',
+                    self.service_url,
                     json = {
-                        "l1": "da",
-                        "l2": "en",
+                        "l1": self.l1,
+                        "l2": self.l2,
                         "sentences": [sentence]
                     }
                 ).json()["translations"][0]["l2"][0]
             print("REPR",repr(sentence), repr(new_sentence))
             new_sentences.append(new_sentence)
         new_text = " ".join(new_sentences)
-        self.cache.set(text, new_text)
+        self.cache.set((self.l1, self.l2, text), new_text)
         return new_text
 
     def runs_compatible(self, r1, r2):

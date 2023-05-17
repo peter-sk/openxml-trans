@@ -4,8 +4,8 @@ from .base_trans import BaseTranslator
 
 class PPTXTranslator(BaseTranslator):
 
-    def __init__(self, model_name=None, service_url=None, cache_name=None, device=None):
-        super(self.__class__, self).__init__(device=device, model_name=model_name, service_url=service_url, cache_name=cache_name)
+    def __init__(self, model_name=None, service_url=None, cache_name=None, device=None, clean_text=False, original_language=None, result_language=None):
+        super(self.__class__, self).__init__(model_name=model_name, service_url=service_url, cache_name=cache_name, device=device, clean_text=clean_text, original_language=original_language, result_language=result_language)
 
     def runs_compatible(self, r1, r2):
         return r1.font.size == r2.font.size and r1.font.name == r2.font.name and r1.font.bold == r2.font.bold and r1.font.italic == r2.font.italic
