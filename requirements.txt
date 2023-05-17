@@ -1,6 +1,7 @@
 accelerate
 git+https://github.com/peter-sk/clean-text
 click
+nltk
 openpyxl
 pdf2docx
 python-docx

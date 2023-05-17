@@ -1,6 +1,8 @@
 from cleantext import clean
+from nltk.tokenize import sent_tokenize
 from os.path import isfile
 from pickle import load as pickle_load, dump as pickle_dump
+from requests import post as http_post
 from sys import argv
 from torch.cuda import is_available as cuda_is_available
 from transformers import pipeline as transformers_pipeline
@@ -25,10 +27,8 @@ class BaseTranslator:
 
     def __init__(self, model_name, service_url, cache_name, device, clean_text, original_language, result_language):
         self.device = ("cuda:0" if cuda_is_available() else "cpu") if device is None else device
-        if model_name is None and service_url is None:
-            raise RuntimeError("Neither model name nor service URL provided!")
         self.l1, self.l2 = original_language, result_language
-        self.pipeline = None if model_name is None else transformers_pipeline("translation", f"{model_name}-{self.l1}-{self.l2}", device=device)
+        self.pipeline = transformers_pipeline("translation", model_name % (self.l1, self.l2), device=device) if service_url is None else None
         self.service_url = service_url
         self.cache = Cache(cache_name)
         self.clean_text = clean_text
@@ -39,28 +39,23 @@ class BaseTranslator:
         new_sentences = []
         if self.clean_text:
             text = clean(text, lang="da", lower=False)
-        sentences = text.split(". ")
-        for i in range(len(sentences)):
-            sentence = sentences[i]
-            if i+1 < len(sentences):
-                sentence += "."
-            if not sentence:
-                new_sentence = sentence
-            elif self.pipeline is not None:
-                new_sentence = self.pipeline(sentence)[0]['translation_text'] if any((c.isalpha() for c in sentence)) else sentence
-            else:
-                from requests import post
-                new_sentence = post(
+        sentences = sent_tokenize(text)
+        sentences = [s for s in sentences if s.strip() and any((c.isalpha() for c in s))]
+        if self.pipeline is not None:
+            new_sentences = [s['translation_text'] for s in self.pipeline(sentences)]
+        else:
+            responses = http_post(
                     self.service_url,
                     json = {
                         "l1": self.l1,
                         "l2": self.l2,
-                        "sentences": [sentence]
+                        "sentences": sentences,
                     }
-                ).json()["translations"][0]["l2"][0]
-            print("REPR",repr(sentence), repr(new_sentence))
-            new_sentences.append(new_sentence)
+                ).json()
+            print(responses)
+            new_sentences = [s['l2'][0] for s in responses['translations']] if responses else responses
         new_text = " ".join(new_sentences)
+        print("REPR",repr(text), repr(sentences), repr(new_sentences), repr(new_text))
         self.cache.set((self.l1, self.l2, text), new_text)
         return new_text
 

@@ -15,9 +15,9 @@ from . import EXT_TO_TRANS
 @option(
     "--model-name",
     "-m",
-    default=None,
+    default="Helsinki-NLP/opus-mt-%s-%s",
     show_default=True,
-    help="""Path or Huggingface Hub name of the model to load.""",
+    help="""Path or Huggingface Hub name template of the model to load.""",
 )
 @option(
     "--service-url",
